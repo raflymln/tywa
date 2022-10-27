@@ -1,11 +1,10 @@
 {
     "name": "tywa",
     "version": "1.0.0",
-    "description": "",
+    "description": "Fast Typescript compiler for NodeJS with low configuration, built on top of EsBuild.",
     "main": "index.js",
     "files": [
-        "index.js",
-        "index.d.ts"
+        "index.js"
     ],
     "bin": {
         "tywa": "./index.js"
