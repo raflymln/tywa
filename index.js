@@ -1,4 +1,5 @@
-#!/usr/bin/env node
+#! /usr/bin/env node
+
 "use strict";
 const esbuild = require("esbuild");
 const glob = require("fast-glob");
@@ -6,21 +7,193 @@ const fs = require("fs");
 const path = require("path");
 const chokidar = require("chokidar");
 const childProcess = require("child_process");
-const tsConfig = require("./tsconfig.json");
 
-const isWatch = !!process.argv.find((argItem) => argItem === "--watch");
 const isProduction = !!process.argv.find((argItem) => argItem === "--production");
+const isWatch = !isProduction && !!process.argv.find((argItem) => argItem === "--watch");
+
+/**
+ * Esbuild compiler options
+ * @type {{
+ *  outDir: string,
+ *  unWatchedDirectories: string[],
+ *  paths: Record<string, [string]>,
+ *  rootDir: string,
+ *  tsconfig: string,
+ *  mainOutputFile: string,
+ * }}
+ */
+let compilerConfig = {};
+
+/**
+ * Typescript compiler options
+ * @type {{
+ *  paths: Record<string, [string]>,
+ *  rootDir: string,
+ *  outDir: string,
+ * }}
+ */
+let tsCompilerConfig = {};
+
+let configPath = "";
+const argvConfigPath = process.argv.findIndex((argItem) => argItem.startsWith("--config"));
+const isThereConfigFile = argvConfigPath !== -1;
+
+if (isThereConfigFile) {
+    const rawConfigPath = process.argv[argvConfigPath];
+
+    if (rawConfigPath.includes("=")) {
+        configPath = rawConfigPath.split("=")[1];
+    } else {
+        configPath = process.argv[argvConfigPath + 1];
+    }
+
+    if (!configPath) {
+        throw new Error("Config file path is not defined or invalid in --config argument");
+    }
+
+    configPath = path.isAbsolute(configPath) //
+        ? configPath
+        : path.join(process.cwd(), configPath);
+
+    if (!fs.existsSync(configPath)) {
+        throw new Error("Config file does not exist");
+    }
+
+    if (fs.lstatSync(configPath).isDirectory()) {
+        throw new Error("Config file path is a directory");
+    }
+
+    const configFileExt = path.extname(configPath);
+    const configFileName = path.basename(configPath);
+    const resolvedConfigPath = path.resolve(configPath);
+
+    const upsertTsConfig = (config) => {
+        const rawTsConfigPath = config.tsconfig;
+
+        if (rawTsConfigPath) {
+            const tsConfigPath = path.isAbsolute(rawTsConfigPath) //
+                ? rawTsConfigPath
+                : path.join(process.cwd(), rawTsConfigPath);
+
+            if (fs.existsSync(tsConfigPath)) {
+                tsCompilerConfig = require(tsConfigPath).compilerOptions;
+            }
+        }
+    };
+
+    try {
+        // Javascript config file
+        if (configFileExt === ".js") {
+            compilerConfig = require(resolvedConfigPath);
+            upsertTsConfig(compilerConfig);
+        }
+
+        // JSON config file (*.json or .tywa)
+        if (configFileExt === ".json" || configFileName === ".tywa") {
+            if (configFileName === "tsconfig.json") {
+                const rawTsConfig = require(resolvedConfigPath);
+
+                if (rawTsConfig.tywaOptions) {
+                    compilerConfig = rawTsConfig.tywaOptions;
+                }
+
+                if (rawTsConfig.compilerOptions) {
+                    tsCompilerConfig = rawTsConfig.compilerOptions;
+                }
+            } else if (configFileName === "package.json") {
+                const packageJson = require(resolvedConfigPath);
+
+                if (!packageJson.tywa) {
+                    throw new Error("`tywa` property is not defined in package.json");
+                }
+
+                compilerConfig = packageJson.tywa;
+                upsertTsConfig(compilerConfig);
+            } else {
+                compilerConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+                upsertTsConfig(compilerConfig);
+            }
+        }
+
+        throw new Error("Config file must be a js, json or `.tywa` file");
+    } catch (error) {
+        throw new Error(`Failed to parse config file: ${error.message}`);
+    }
+} else {
+    const isExists = (file) => fs.existsSync(path.join(process.cwd(), file));
+    const getFile = (file) => path.join(process.cwd(), file);
+
+    if (isExists("tsconfig.json")) {
+        tsCompilerConfig = require(getFile("tsconfig.json"));
+
+        if (tsCompilerConfig.tywaOptions) {
+            compilerConfig = tsCompilerConfig.tywaOptions;
+        }
+
+        if (tsCompilerConfig.compilerOptions) {
+            tsCompilerConfig = tsCompilerConfig.compilerOptions;
+        }
+    } else if (isExists("package.json")) {
+        const packageJson = require(getFile("package.json"));
+
+        if (!packageJson.tywa) {
+            throw new Error("`tywa` property is not defined in package.json");
+        }
+
+        compilerConfig = packageJson.tywa;
+        upsertTsConfig(compilerConfig);
+    } else if (isExists(".tywa")) {
+        compilerConfig = JSON.parse(fs.readFileSync(getFile(".tywa"), "utf8"));
+        upsertTsConfig(compilerConfig);
+    }
+}
+
+const getRelativePath = (filePath) => {
+    if (!filePath) {
+        return undefined;
+    }
+
+    if (path.isAbsolute(filePath)) {
+        return path.relative(process.cwd(), filePath);
+    }
+
+    return filePath;
+};
+
+compilerConfig = {
+    outDir: getRelativePath(compilerConfig.outDir || tsCompilerConfig.outDir),
+    rootDir: getRelativePath(compilerConfig.rootDir || tsCompilerConfig.rootDir),
+    paths: compilerConfig.paths || tsCompilerConfig.paths || {},
+    unWatchedDirectories: compilerConfig.unWatchedDirectories || [],
+    mainOutputFile: compilerConfig.mainOutputFile || undefined,
+};
+
+if (!compilerConfig.outDir) {
+    throw new Error("Output directory is not defined");
+}
+
+if (!compilerConfig.rootDir) {
+    throw new Error("Root directory is not defined");
+}
+
+if (!compilerConfig.mainOutputFile && isWatch) {
+    throw new Error("Main output file is not defined");
+}
+
+if (!compilerConfig.paths) {
+    console.warn("Paths are not defined, if your project uses aliases in imports, tywa will not fix them");
+}
+
+console.log("Tywa is running in", isProduction ? "production" : "development", "mode");
 
 const compilerOptions = {
-    outdir: tsConfig.compilerOptions.outDir,
+    outdir: compilerConfig.outDir,
     bundle: false,
     platform: "node",
     target: "esnext",
     format: "cjs",
     minify: isProduction,
 };
-
-const unWatchedDirectories = ["commands"];
 
 /**
  * Fix all file import paths that using typescript paths,
@@ -45,8 +218,8 @@ const fixFileImportPaths = () => {
             const [, , importPath] = match;
             let pathReplacement = "";
 
-            for (const [alias, resolveFolder] of Object.entries(tsConfig.compilerOptions.paths)) {
-                const rootDir = tsConfig.compilerOptions.rootDir;
+            for (const [alias, resolveFolder] of Object.entries(compilerConfig.paths)) {
+                const rootDir = compilerConfig.rootDir;
 
                 // This will remove `*` from the end of the path also replacing source folder name with output folder name
                 // Example: "@/*": ["src/*"] -> "@/": ["/dist"]
@@ -100,7 +273,7 @@ const buildFile = async (file) => {
 
         // It will get the current file directory and replace the source folder name with output folder name
         // Example: "src/commands/player/stop.js" -> "dist/commands/player/stop.js"
-        const projectRoot = path.resolve(tsConfig.compilerOptions.rootDir);
+        const projectRoot = path.resolve(compilerConfig.rootDir);
         const filePath = path.resolve(file);
         const relativePath = path.relative(projectRoot, filePath);
         outdir = path.posix.join(compilerOptions.outdir, path.dirname(relativePath).replace(/\\/g, path.posix.sep));
@@ -136,7 +309,7 @@ const compile = async () => {
         fs.rmSync(compilerOptions.outdir, { recursive: true });
     }
 
-    const projectRoot = `${tsConfig.compilerOptions.rootDir}/**/*.ts`;
+    const projectRoot = `${compilerConfig.rootDir}/**/*.ts`;
 
     const files = glob.sync(projectRoot, {
         ignore: ["**.d.ts", "**/*.test.ts"],
@@ -186,8 +359,8 @@ const compile = async () => {
 
             console.log(`File changed: ${file}`);
 
-            for (const dir of unWatchedDirectories) {
-                if (path.dirname(file).includes(dir)) {
+            for (const dir of compilerConfig.unWatchedDirectories) {
+                if (file.includes(dir)) {
                     return;
                 }
             }
