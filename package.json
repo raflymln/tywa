@@ -1,23 +1,77 @@
 {
-  "name": "tywa",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "chokidar": "^3.5.3",
-    "esbuild": "^0.15.10",
-    "fast-glob": "^3.2.12"
-  },
-  "devDependencies": {
-    "eslint": "^8.25.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-prettier": "^4.2.1",
-    "prettier": "^2.7.1"
-  }
+    "name": "tywa",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "files": [
+        "index.js",
+        "index.d.ts"
+    ],
+    "bin": {
+        "tywa": "./index.js"
+    },
+    "private": false,
+    "publishConfig": {
+        "access": "public"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "chokidar": "^3.5.3",
+        "esbuild": "^0.15.10",
+        "fast-glob": "^3.2.12"
+    },
+    "devDependencies": {
+        "eslint": "^8.25.0",
+        "eslint-config-prettier": "^8.5.0",
+        "eslint-plugin-prettier": "^4.2.1",
+        "prettier": "^2.7.1"
+    },
+    "eslintConfig": {
+        "ignorePatterns": [
+            "/node_modules",
+            "/dist",
+            ".env",
+            "*.js",
+            "*.md"
+        ],
+        "plugins": [
+            "prettier"
+        ],
+        "extends": [
+            "eslint:recommended",
+            "plugin:prettier/recommended",
+            "plugin:@typescript-eslint/eslint-recommended",
+            "plugin:@typescript-eslint/recommended"
+        ],
+        "parserOptions": {
+            "sourceType": "module",
+            "ecmaVersion": 2020
+        },
+        "rules": {
+            "no-case-declarations": "off",
+            "no-empty-function": "off",
+            "prefer-const": "off",
+            "prettier/prettier": "error",
+            "react/no-unescaped-entities": "off",
+            "@typescript-eslint/no-explicit-any": "off"
+        },
+        "env": {
+            "node": true
+        }
+    },
+    "prettier": {
+        "trailingComma": "es5",
+        "bracketSpacing": true,
+        "arrowParens": "always",
+        "endOfLine": "auto",
+        "htmlWhitespaceSensitivity": "css",
+        "printWidth": 200,
+        "semi": true,
+        "tabWidth": 4
+    }
 }
