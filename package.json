@@ -1,6 +1,6 @@
 {
     "name": "tywa",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Fast Typescript compiler for NodeJS with low configuration, built on top of EsBuild.",
     "main": "index.js",
     "files": [
@@ -13,6 +13,11 @@
     "publishConfig": {
         "access": "public"
     },
+    "repository": {
+        "url": "https://github.com/raflymln/tywa",
+        "type": "git"
+    },
+    "homepage": "https://github.com/raflymln/tywa#README",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
     },
