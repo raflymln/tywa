@@ -41,7 +41,7 @@ const foo = require('./src/foo')
 ```
 
 ---
-> ### 🐠🌊 Tywa was originally made for Hupa, but I decided to make it public so that it can be used by others. If you're interested in Hupa, you can check it out [here](https://github.com/raflymln/hupa).
+> ### 🐠🌊 Tywa was originally made for Hupa, but I decided to make it public so that it can be used by others. If you're interested in Hupa, you can check it out [here](https://top.gg/bot/927614658414776320).
 ---
 
 ## 📥 Installation
@@ -247,4 +247,8 @@ But you also define `commands` as the `unWatchedDirectories`, so when you make a
 ## 🎁 Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+## ❓ Support & Discussion
+
+Join our Discord server: [https://discord.gg/S6MvHSfYrW](https://discord.gg/S6MvHSfYrW)
 
