@@ -26,11 +26,11 @@
     "license": "ISC",
     "dependencies": {
         "chokidar": "^3.5.3",
-        "esbuild": "^0.15.12",
+        "esbuild": "^0.15.15",
         "fast-glob": "^3.2.12"
     },
     "devDependencies": {
-        "eslint": "^8.25.0",
+        "eslint": "^8.28.0",
         "eslint-config-prettier": "^8.5.0",
         "eslint-plugin-prettier": "^4.2.1",
         "prettier": "^2.7.1"
