@@ -1,6 +1,6 @@
 {
     "name": "tywa",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Fast Typescript compiler for NodeJS with low configuration, built on top of EsBuild.",
     "main": "index.js",
     "files": [
